@@ -38,6 +38,11 @@
 
 // SD
 #include "File_Handling_RTOS.h"
+
+#include "lcd/ILI9341_Touchscreen.h"
+#include "lcd/ILI9341_STM32_Driver.h"
+#include "lcd/ILI9341_GFX.h"
+#include "lcd/LCD.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -167,6 +172,18 @@ const osThreadAttr_t SD_CARD_attributes = {
   .stack_size = sizeof(SD_CARDBuffer),
   .priority = (osPriority_t) osPriorityHigh,
 };
+/* Definitions for LCD */
+osThreadId_t LCDHandle;
+uint32_t LCDBuffer[ 2048 ];
+osStaticThreadDef_t LCDControlBlock;
+const osThreadAttr_t LCD_attributes = {
+  .name = "LCD",
+  .cb_mem = &LCDControlBlock,
+  .cb_size = sizeof(LCDControlBlock),
+  .stack_mem = &LCDBuffer[0],
+  .stack_size = sizeof(LCDBuffer),
+  .priority = (osPriority_t) osPriorityHigh1,
+};
 /* Definitions for UARTQueue */
 osMessageQueueId_t UARTQueueHandle;
 uint8_t UARTQueueBuffer[ 10 * sizeof( QUEUE_t ) ];
@@ -274,6 +291,7 @@ void Start_UART_Task(void *argument);
 void Start_bme280(void *argument);
 void Start_AM2302(void *argument);
 void Start_SD_CARD(void *argument);
+void Start_LCD(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -328,6 +346,9 @@ int main(void)
   //HAL_TIM_Base_Start_IT(&htim10);			// Using for generate us delays
   HAL_TIM_Base_Start_IT(&htim1);			// Blink Green LED
 
+
+  LCD_init();
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -374,6 +395,9 @@ int main(void)
 
   /* creation of SD_CARD */
   SD_CARDHandle = osThreadNew(Start_SD_CARD, NULL, &SD_CARD_attributes);
+
+  /* creation of LCD */
+  LCDHandle = osThreadNew(Start_LCD, NULL, &LCD_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -817,7 +841,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, CS_I2C_SPI_Pin|CS_LCD_Pin|RESET_LCD_Pin|DC_LCD_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, T_MOSI_Pin|CS_I2C_SPI_Pin|CS_LCD_Pin|RESET_LCD_Pin
+                          |DC_LCD_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(OTG_FS_PowerSwitchOn_GPIO_Port, OTG_FS_PowerSwitchOn_Pin, GPIO_PIN_SET);
@@ -832,8 +857,8 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, T_CLK_Pin|T_CS_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : CS_I2C_SPI_Pin CS_LCD_Pin */
-  GPIO_InitStruct.Pin = CS_I2C_SPI_Pin|CS_LCD_Pin;
+  /*Configure GPIO pins : T_MOSI_Pin CS_I2C_SPI_Pin CS_LCD_Pin */
+  GPIO_InitStruct.Pin = T_MOSI_Pin|CS_I2C_SPI_Pin|CS_LCD_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -971,9 +996,21 @@ void StartDefaultTask(void *argument)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
+//    LCD_init();
+//    lcd_test_print();
+//  ILI9341_Draw_Text( "TEST !!!", 5,0, WHITE, 2, BLACK);
+
+//  LCD_init();
+
   for(;;)
   {
-	  osDelay(1);
+	  osDelay(1000);
+	  ILI9341_Draw_Text( "TEST 1234567890 !!!", 5,0, WHITE, 2, BLACK);
+
+	  ILI9341_Draw_Filled_Rectangle_Coord(20, 20, 150, 150, RED);
+	  ILI9341_Draw_Filled_Rectangle_Coord(20, 20, 100, 100, BLUE);
+
+
 
   }
   /* USER CODE END 5 */
@@ -1024,9 +1061,14 @@ void Start_Blue_LED_Blink(void *argument)
 	char buf[5] = {0};
 	char str_end_of_line[4] = {'\r','\n','\0'};
 
+	//LCD_init();
+	//lcd_test_print();
+
 	static uint8_t i = 1;
 	for(;;)
 	{
+		//lcd_test_print();
+
 		// Blue LED blink
 		HAL_GPIO_WritePin(GPIOD, LD6_Pin, GPIO_PIN_SET);
 		osDelay(100);
@@ -1431,7 +1473,11 @@ void Start_AM2302(void *argument)
 
 	  		//i2c_device.AM2302_ready_status = false;
 	  	}
+
   }
+
+
+
   /* USER CODE END Start_AM2302 */
 }
 
@@ -1478,8 +1524,28 @@ void Start_SD_CARD(void *argument)
 
 	  HAL_GPIO_WritePin(GPIOD, LD3_Pin, GPIO_PIN_RESET);		// LED OFF
 
+
+
   }
   /* USER CODE END Start_SD_CARD */
+}
+
+/* USER CODE BEGIN Header_Start_LCD */
+/**
+* @brief Function implementing the LCD thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_Start_LCD */
+void Start_LCD(void *argument)
+{
+  /* USER CODE BEGIN Start_LCD */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END Start_LCD */
 }
 
 /**

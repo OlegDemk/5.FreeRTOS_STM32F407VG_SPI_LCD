@@ -1,0 +1,4 @@
+ILI9341_Touchscreen.c:87:10:TP_Read	16	static
+ILI9341_Touchscreen.c:111:6:TP_Write	24	static
+ILI9341_Touchscreen.c:138:9:TP_Read_Coordinates	56	static
+ILI9341_Touchscreen.c:207:9:TP_Touchpad_Pressed	8	static

@@ -1,0 +1,2 @@
+LCD.c:32:6:LCD_init	8	static
+LCD.c:40:6:lcd_test_print	16	static
