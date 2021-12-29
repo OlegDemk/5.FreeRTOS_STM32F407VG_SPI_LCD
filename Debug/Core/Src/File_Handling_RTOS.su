@@ -1,0 +1,12 @@
+File_Handling_RTOS.c:31:6:Send_Uart	16	static
+File_Handling_RTOS.c:40:6:Mount_SD	16	static
+File_Handling_RTOS.c:53:6:Unmount_SD	16	static
+File_Handling_RTOS.c:61:9:Scan_SD	88	static
+File_Handling_RTOS.c:103:9:Format_SD	64	static
+File_Handling_RTOS.c:136:9:Write_File	40	static
+File_Handling_RTOS.c:195:9:Read_File	40	static
+File_Handling_RTOS.c:263:9:Create_File	40	static
+File_Handling_RTOS.c:312:9:Update_File	40	static
+File_Handling_RTOS.c:376:9:Remove_File	32	static
+File_Handling_RTOS.c:411:9:Create_Dir	24	static
+File_Handling_RTOS.c:431:6:Check_SD_Space	16	static
