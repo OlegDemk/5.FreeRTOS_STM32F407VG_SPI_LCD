@@ -60,6 +60,14 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define CS_I2C_SPI_Pin GPIO_PIN_3
 #define CS_I2C_SPI_GPIO_Port GPIOE
+#define CS_LCD_Pin GPIO_PIN_4
+#define CS_LCD_GPIO_Port GPIOE
+#define RESET_LCD_Pin GPIO_PIN_5
+#define RESET_LCD_GPIO_Port GPIOE
+#define DC_LCD_Pin GPIO_PIN_6
+#define DC_LCD_GPIO_Port GPIOE
+#define T_IRQ_Pin GPIO_PIN_13
+#define T_IRQ_GPIO_Port GPIOC
 #define PC14_OSC32_IN_Pin GPIO_PIN_14
 #define PC14_OSC32_IN_GPIO_Port GPIOC
 #define PC15_OSC32_OUT_Pin GPIO_PIN_15
@@ -124,8 +132,14 @@ void Error_Handler(void);
 #define SWO_GPIO_Port GPIOB
 #define Audio_SCL_Pin GPIO_PIN_6
 #define Audio_SCL_GPIO_Port GPIOB
+#define T_CLK_Pin GPIO_PIN_7
+#define T_CLK_GPIO_Port GPIOB
+#define T_CS_Pin GPIO_PIN_8
+#define T_CS_GPIO_Port GPIOB
 #define Audio_SDA_Pin GPIO_PIN_9
 #define Audio_SDA_GPIO_Port GPIOB
+#define T_MISO_Pin GPIO_PIN_0
+#define T_MISO_GPIO_Port GPIOE
 #define MEMS_INT2_Pin GPIO_PIN_1
 #define MEMS_INT2_GPIO_Port GPIOE
 /* USER CODE BEGIN Private defines */
