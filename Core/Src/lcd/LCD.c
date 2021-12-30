@@ -28,6 +28,8 @@ For add new menu need.
 #include <string.h>
 #include <stdio.h>
 
+extern RNG_HandleTypeDef hrng;
+
 // -----------------------------------------------------------------------
 void LCD_init(void)
 {
@@ -39,10 +41,53 @@ void LCD_init(void)
 // -----------------------------------------------------------------------
 void lcd_test_print (void)
 {
-	ILI9341_Draw_Text( "TEST 1234567890 !!!", 5,0, WHITE, 2, BLACK);
+	ILI9341_Draw_Text("TEST !!!", 30, 200, GREEN, 4, BLACK);
+
+	ILI9341_Draw_Filled_Rectangle_Coord(20, 20, 150, 150, GREEN);
+	ILI9341_Draw_Filled_Rectangle_Coord(20, 20, 100, 100, BLUE);
+	ILI9341_Draw_Filled_Rectangle_Coord(50, 50, 200, 200, DARKCYAN);
+	ILI9341_Draw_Filled_Rectangle_Coord(70, 70, 200, 200, CYAN);
+	ILI9341_Draw_Filled_Rectangle_Coord(70, 70, 150, 150, PINK);
+	ILI9341_Draw_Filled_Rectangle_Coord(60, 20, 100, 100, BLUE);
+	ILI9341_Draw_Filled_Rectangle_Coord(80, 100, 200, 200, RED);
 }
 // -----------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------
+/*
+ * Random generate circles
+ */
+void speed_test_LCD(int number_of_tests)
+{
+	int i =0;
+	while(i <= number_of_tests)
+	{
+		i ++;
+		//ILI9341_Draw_Text("", i, 200, YELLOW, 4, BLACK);
+		uint32_t random_num = 0;
+		uint16_t xr = 0;
+		uint16_t yr = 0;
+		uint16_t radiusr = 0;
+		uint16_t colourr = 0;
 
+		random_num = HAL_RNG_GetRandomNumber(&hrng);
+		xr = random_num;
+		random_num = HAL_RNG_GetRandomNumber(&hrng);
+		yr = random_num;
+		random_num = HAL_RNG_GetRandomNumber(&hrng);
+		radiusr = random_num;
+		random_num = HAL_RNG_GetRandomNumber(&hrng);
+		colourr = random_num;
+
+		xr &= 0x01FF;
+		yr &= 0x01FF;
+		radiusr &= 0x001F;
+		colourr &= 0xFFFF;
+		ILI9341_Draw_Filled_Circle(xr, yr, radiusr, colourr);
+		//ILI9341_Draw_Pixel(xr, yr, WHITE);
+	}
+
+}
+//-------------------------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------
 

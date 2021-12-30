@@ -11,6 +11,7 @@
 
 void LCD_init(void);
 void lcd_test_print(void);
+void speed_test_LCD(int number_of_tests);
 ////////////////////////////////////////////////////////////
 // MICRO-MENU
 

@@ -78,6 +78,8 @@ volatile uint8_t Timer1, Timer2;
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c3;
 
+RNG_HandleTypeDef hrng;
+
 RTC_HandleTypeDef hrtc;
 
 SPI_HandleTypeDef hspi1;
@@ -182,7 +184,7 @@ const osThreadAttr_t LCD_attributes = {
   .cb_size = sizeof(LCDControlBlock),
   .stack_mem = &LCDBuffer[0],
   .stack_size = sizeof(LCDBuffer),
-  .priority = (osPriority_t) osPriorityHigh1,
+  .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for UARTQueue */
 osMessageQueueId_t UARTQueueHandle;
@@ -284,6 +286,7 @@ static void MX_SPI1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_RTC_Init(void);
 static void MX_SPI2_Init(void);
+static void MX_RNG_Init(void);
 void StartDefaultTask(void *argument);
 void Start_Blue_LED_Blink(void *argument);
 void Start_Show_Resources(void *argument);
@@ -339,6 +342,7 @@ int main(void)
   MX_TIM1_Init();
   MX_RTC_Init();
   MX_SPI2_Init();
+  MX_RNG_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim3);		//  This TIM3 using for calculate how many time all tasks was running.
 
@@ -348,6 +352,16 @@ int main(void)
 
 
   LCD_init();
+
+
+//  osDelay(1000);
+//	  ILI9341_Draw_Text( "TEST 1234567890 !!!", 5,0, WHITE, 2, BLACK);
+//
+////	  ILI9341_Draw_Filled_Rectangle_Coord(20, 20, 150, 150, RED);
+////	  ILI9341_Draw_Filled_Rectangle_Coord(20, 20, 100, 100, BLUE);
+////	  ILI9341_Draw_Filled_Rectangle_Coord(50, 50, 200, 200, WHITE);
+////	  ILI9341_Draw_Filled_Rectangle_Coord(30, 30, 200, 200, YELLOW);
+
 
   /* USER CODE END 2 */
 
@@ -497,6 +511,32 @@ static void MX_I2C3_Init(void)
   /* USER CODE BEGIN I2C3_Init 2 */
 
   /* USER CODE END I2C3_Init 2 */
+
+}
+
+/**
+  * @brief RNG Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_RNG_Init(void)
+{
+
+  /* USER CODE BEGIN RNG_Init 0 */
+
+  /* USER CODE END RNG_Init 0 */
+
+  /* USER CODE BEGIN RNG_Init 1 */
+
+  /* USER CODE END RNG_Init 1 */
+  hrng.Instance = RNG;
+  if (HAL_RNG_Init(&hrng) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN RNG_Init 2 */
+
+  /* USER CODE END RNG_Init 2 */
 
 }
 
@@ -997,19 +1037,19 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
 //    LCD_init();
-//    lcd_test_print();
-//  ILI9341_Draw_Text( "TEST !!!", 5,0, WHITE, 2, BLACK);
 
 //  LCD_init();
 
   for(;;)
   {
-	  osDelay(1000);
-	  ILI9341_Draw_Text( "TEST 1234567890 !!!", 5,0, WHITE, 2, BLACK);
-
-	  ILI9341_Draw_Filled_Rectangle_Coord(20, 20, 150, 150, RED);
-	  ILI9341_Draw_Filled_Rectangle_Coord(20, 20, 100, 100, BLUE);
-
+//	  osDelay(1000);
+//	  ILI9341_Draw_Text( "TEST 1234567890 !!!", 5,0, WHITE, 2, BLACK);
+	  osDelay(10);
+	 // speed_test_LCD(10);
+//	  ILI9341_Draw_Filled_Rectangle_Coord(20, 20, 150, 150, RED);
+//	  ILI9341_Draw_Filled_Rectangle_Coord(20, 20, 100, 100, BLUE);
+//	  ILI9341_Draw_Filled_Rectangle_Coord(50, 50, 200, 200, WHITE);
+//	  ILI9341_Draw_Filled_Rectangle_Coord(30, 30, 200, 200, YELLOW);
 
 
   }
@@ -1067,7 +1107,7 @@ void Start_Blue_LED_Blink(void *argument)
 	static uint8_t i = 1;
 	for(;;)
 	{
-		//lcd_test_print();
+//		speed_test_LCD(5);
 
 		// Blue LED blink
 		HAL_GPIO_WritePin(GPIOD, LD6_Pin, GPIO_PIN_SET);
@@ -1541,9 +1581,15 @@ void Start_LCD(void *argument)
 {
   /* USER CODE BEGIN Start_LCD */
   /* Infinite loop */
+	LCD_init();
+
   for(;;)
   {
-    osDelay(1);
+	osDelay(100);
+	HAL_GPIO_WritePin(GPIOD, LD4_Pin, GPIO_PIN_SET);
+	speed_test_LCD(10);
+	lcd_test_print();
+	HAL_GPIO_WritePin(GPIOD, LD4_Pin, GPIO_PIN_RESET);
   }
   /* USER CODE END Start_LCD */
 }
@@ -1576,7 +1622,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	// Handler for SD
 	if(htim->Instance == TIM1) 					//check if the interrupt comes from TIM1 (Blink LED)
 	{
-		HAL_GPIO_TogglePin(GPIOD, LD4_Pin);		// Green LED
+		//HAL_GPIO_TogglePin(GPIOD, LD4_Pin);		// Green LED
 	}
 
 	// Handler for count how many time works any tasks
