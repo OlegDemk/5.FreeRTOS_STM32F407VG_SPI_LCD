@@ -39,10 +39,12 @@
 // SD
 #include "File_Handling_RTOS.h"
 
-#include "lcd/ILI9341_Touchscreen.h"
-#include "lcd/ILI9341_STM32_Driver.h"
-#include "lcd/ILI9341_GFX.h"
-#include "lcd/LCD.h"
+
+#include "LCD/spi_ili9341.h"
+
+
+
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -64,6 +66,11 @@ uint32_t tim_val = 0;
 volatile uint8_t FatFsCnt = 0;
 volatile uint8_t Timer1, Timer2;
 
+// LCD
+extern uint16_t TFT9341_WIDTH;
+extern uint16_t TFT9341_HEIGHT;
+
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -84,6 +91,7 @@ RTC_HandleTypeDef hrtc;
 
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
+DMA_HandleTypeDef hdma_spi2_tx;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
@@ -286,6 +294,7 @@ static void MX_SPI1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_RTC_Init(void);
 static void MX_SPI2_Init(void);
+static void MX_DMA_Init(void);
 static void MX_RNG_Init(void);
 void StartDefaultTask(void *argument);
 void Start_Blue_LED_Blink(void *argument);
@@ -342,6 +351,7 @@ int main(void)
   MX_TIM1_Init();
   MX_RTC_Init();
   MX_SPI2_Init();
+  MX_DMA_Init();
   MX_RNG_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim3);		//  This TIM3 using for calculate how many time all tasks was running.
@@ -351,7 +361,6 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim1);			// Blink Green LED
 
 
-  LCD_init();
 
 
 //  osDelay(1000);
@@ -860,6 +869,22 @@ static void MX_TIM10_Init(void)
   /* USER CODE BEGIN TIM10_Init 2 */
 
   /* USER CODE END TIM10_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 14, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
 
 }
 
@@ -1581,15 +1606,27 @@ void Start_LCD(void *argument)
 {
   /* USER CODE BEGIN Start_LCD */
   /* Infinite loop */
-	LCD_init();
+	TFT9341_ini(240, 320);
+	TFT9341_FillScreen(TFT9341_BLACK);
+	uint16_t i,j;
 
   for(;;)
   {
-	osDelay(100);
-	HAL_GPIO_WritePin(GPIOD, LD4_Pin, GPIO_PIN_SET);
-	speed_test_LCD(10);
-	lcd_test_print();
-	HAL_GPIO_WritePin(GPIOD, LD4_Pin, GPIO_PIN_RESET);
+	  for(i=0;i<1000;i++)
+	      {
+	        TFT9341_DrawCircle(HAL_RNG_GetRandomNumber(&hrng)%(TFT9341_WIDTH-40)+20,
+	                           HAL_RNG_GetRandomNumber(&hrng)%(TFT9341_HEIGHT-40)+20,
+							   10 ,TFT9341_RandColor());
+	        osDelay(3);
+	      }
+	  	  osDelay(500);
+	      TFT9341_FillScreen(TFT9341_BLACK);
+//	  osDelay(500);
+//	  TFT9341_FillScreen(TFT9341_BLACK);
+
+
+	//lcd_test_print();
+	//HAL_GPIO_WritePin(GPIOD, LD4_Pin, GPIO_PIN_RESET);
   }
   /* USER CODE END Start_LCD */
 }

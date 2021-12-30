@@ -62,9 +62,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_ctlreq.h \
  ../Core/Inc/BME280/bme280_defs.h ../Core/Inc/BME280/bme280.h \
  ../Core/Inc/File_Handling_RTOS.h ../Core/Inc/fatfs_sd.h \
- ../Core/Inc/lcd/ILI9341_Touchscreen.h \
- ../Core/Inc/lcd/ILI9341_STM32_Driver.h ../Core/Inc/lcd/ILI9341_GFX.h \
- ../Core/Inc/lcd/LCD.h
+ ../Core/Inc/LCD/spi_ili9341.h
 
 ../Core/Inc/main.h:
 
@@ -206,10 +204,4 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 
 ../Core/Inc/fatfs_sd.h:
 
-../Core/Inc/lcd/ILI9341_Touchscreen.h:
-
-../Core/Inc/lcd/ILI9341_STM32_Driver.h:
-
-../Core/Inc/lcd/ILI9341_GFX.h:
-
-../Core/Inc/lcd/LCD.h:
+../Core/Inc/LCD/spi_ili9341.h:
