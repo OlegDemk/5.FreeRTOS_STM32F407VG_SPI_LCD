@@ -283,19 +283,19 @@ bool delay_us(uint16_t us)
 //	return true;
 }
 
-//void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
-//{
-//	 if(hspi == &hspi2)
-//	  {
-//	    dma_spi_cnt--;
-//	    if(dma_spi_cnt==0)
-//	    {
-//	      HAL_SPI_DMAStop(&hspi2);
-//	      dma_spi_cnt=1;
-//	      dma_spi_fl=1;
-//	    }
-//	  }
-//}
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+	 if(hspi == &hspi2)
+	  {
+	    dma_spi_cnt--;
+	    if(dma_spi_cnt==0)
+	    {
+	      HAL_SPI_DMAStop(&hspi2);
+	      dma_spi_cnt=1;
+	      dma_spi_fl=1;
+	    }
+	  }
+}
 
 /* USER CODE END PV */
 
@@ -366,8 +366,10 @@ int main(void)
   MX_FATFS_Init();
   MX_TIM1_Init();
   MX_RTC_Init();
-  MX_SPI2_Init();
+
   MX_DMA_Init();
+  MX_SPI2_Init();
+
   MX_RNG_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim3);		//  This TIM3 using for calculate how many time all tasks was running.
@@ -1628,8 +1630,9 @@ void Start_LCD(void *argument)
 
   for(;;)
   {
-	  osDelay(100);
+	  osDelay(2000);
 	  speed_test();
+	  TFT9341_FillScreen(TFT9341_BLACK);
 
 
 

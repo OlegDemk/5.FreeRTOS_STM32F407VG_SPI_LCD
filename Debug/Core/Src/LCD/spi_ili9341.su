@@ -5,7 +5,7 @@ spi_ili9341.c:72:6:TFT9341_reset	8	static
 spi_ili9341.c:79:6:TFT9341_ini	32	static
 spi_ili9341.c:220:13:TFT9341_WriteData	24	static
 spi_ili9341.c:232:13:TFT9341_SetAddrWindow	32	static
-spi_ili9341.c:252:6:TFT9341_FillRect	40	static
+spi_ili9341.c:252:6:TFT9341_FillRect	48	static
 spi_ili9341.c:304:6:TFT9341_FillScreen	24	static
 spi_ili9341.c:325:10:TFT9341_RandColor	8	static
 spi_ili9341.c:330:6:TFT9341_DrawPixel	24	static

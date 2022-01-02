@@ -252,74 +252,74 @@ static void TFT9341_SetAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_
 void TFT9341_FillRect(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color)
 {
 
-//	uint32_t i, n, cnt, buf_size;
-//		if(x1>x2) swap(x1,x2);
-//		if(y1>y2) swap(y1,y2);
-//	  TFT9341_SetAddrWindow(x1, y1, x2, y2);
-//	  DC_DATA();
-//	  n = (x2-x1+1)*(y2-y1+1)*2;
-//	  if(n<=8192)
-//	  {
-//	    cnt = 1;
-//	    buf_size = n;
-//	  }
-//	  else
-//	  {
-//	    cnt = n/2;
-//	    buf_size = 2;
-//	    for(i = 8; i < n/8; i++)
-//	    {
-//	      if(n%i == 0)
-//	      {
-//	        cnt = i;
-//	        buf_size = n/i;
-//	        break;
-//	      }
-//	    }
-//	  }
-//	  for(i = 0; i < buf_size/2; i++)
-//	  {
-//	    frm_buf[i*2] = color >> 8;
-//	    frm_buf[i*2+1] = color & 0xFF;
-//	  }
-//	  dma_spi_cnt = cnt;
-//	  HAL_SPI_Transmit_DMA(&hspi2, frm_buf, buf_size);
-//	  while(!dma_spi_fl) {}
-//	  dma_spi_fl=0;
+	uint32_t i, n, cnt, buf_size;
+		if(x1>x2) swap(x1,x2);
+		if(y1>y2) swap(y1,y2);
+	  TFT9341_SetAddrWindow(x1, y1, x2, y2);
+	  DC_DATA();
+	  n = (x2-x1+1)*(y2-y1+1)*2;
+	  if(n<=8192)
+	  {
+	    cnt = 1;
+	    buf_size = n;
+	  }
+	  else
+	  {
+	    cnt = n/2;
+	    buf_size = 2;
+	    for(i = 8; i < n/8; i++)
+	    {
+	      if(n%i == 0)
+	      {
+	        cnt = i;
+	        buf_size = n/i;
+	        break;
+	      }
+	    }
+	  }
+	  for(i = 0; i < buf_size/2; i++)
+	  {
+	    frm_buf[i*2] = color >> 8;
+	    frm_buf[i*2+1] = color & 0xFF;
+	  }
+	  dma_spi_cnt = cnt;
+	  HAL_SPI_Transmit_DMA(&hspi2, frm_buf, buf_size);
+	  while(!dma_spi_fl) {}
+	  dma_spi_fl=0;
 
 	/////////////////////////////////////
 	// Without DMA
-  if((x1 >= TFT9341_WIDTH) || (y1 >= TFT9341_HEIGHT) || (x2 >= TFT9341_WIDTH) || (y2 >= TFT9341_HEIGHT)) return;
-	if(x1>x2) swap(x1,x2);
-	if(y1>y2) swap(y1,y2);
-  TFT9341_SetAddrWindow(x1, y1, x2, y2);
-  uint8_t data[] = { color >> 8, color & 0xFF };
-  DC_DATA();
-  for(uint32_t i = 0; i < (x2-x1+1)*(y2-y1+1); i++)
-  {
-      HAL_SPI_Transmit(&hspi2, data, 2, HAL_MAX_DELAY);
-  }
+//  if((x1 >= TFT9341_WIDTH) || (y1 >= TFT9341_HEIGHT) || (x2 >= TFT9341_WIDTH) || (y2 >= TFT9341_HEIGHT)) return;
+//	if(x1>x2) swap(x1,x2);
+//	if(y1>y2) swap(y1,y2);
+//  TFT9341_SetAddrWindow(x1, y1, x2, y2);
+//  uint8_t data[] = { color >> 8, color & 0xFF };
+//  DC_DATA();
+//  for(uint32_t i = 0; i < (x2-x1+1)*(y2-y1+1); i++)
+//  {
+//      HAL_SPI_Transmit(&hspi2, data, 2, HAL_MAX_DELAY);
+//  }
 }
 // ---------------------------------------------------------------------------------
 void TFT9341_FillScreen(uint16_t color)
 {
-//	uint32_t i, n;
-//	  TFT9341_SetAddrWindow(0, 0, TFT9341_WIDTH-1, TFT9341_HEIGHT-1);
-//	  for(i=0;i<3200;i++)
-//	  {
-//	    frm_buf[i*2] = color >> 8;
-//	    frm_buf[i*2+1] = color & 0xFF;
-//	  }
-//	  n = 6400;
-//	  DC_DATA();
-//	  dma_spi_cnt = 24;
-//	  HAL_SPI_Transmit_DMA(&hspi2, frm_buf, n);
-//	  while(!dma_spi_fl) {}
-//	  dma_spi_fl=0;
+	uint32_t i, n;
+	  TFT9341_SetAddrWindow(0, 0, TFT9341_WIDTH-1, TFT9341_HEIGHT-1);
+	  for(i=0;i<3200;i++)
+	  {
+	    frm_buf[i*2] = color >> 8;
+	    frm_buf[i*2+1] = color & 0xFF;
+	  }
+	  n = 6400;
+	  DC_DATA();
+	  dma_spi_cnt = 24;
+	  HAL_SPI_Transmit_DMA(&hspi2, frm_buf, n);
+	  while(!dma_spi_fl) {}
+	  dma_spi_fl=0;
 
 	////////////////////////////////
 	  // Without DMA
-  TFT9341_FillRect(0, 0, TFT9341_WIDTH-1, TFT9341_HEIGHT-1, color);
+  //TFT9341_FillRect(0, 0, TFT9341_WIDTH-1, TFT9341_HEIGHT-1, color);
 }
 // ---------------------------------------------------------------------------------
 uint16_t TFT9341_RandColor(void)
