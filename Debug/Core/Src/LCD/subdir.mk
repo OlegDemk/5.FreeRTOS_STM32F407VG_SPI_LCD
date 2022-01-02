@@ -5,12 +5,24 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../Core/Src/LCD/font12.c \
+../Core/Src/LCD/font16.c \
+../Core/Src/LCD/font20.c \
+../Core/Src/LCD/font24.c \
 ../Core/Src/LCD/spi_ili9341.c 
 
 OBJS += \
+./Core/Src/LCD/font12.o \
+./Core/Src/LCD/font16.o \
+./Core/Src/LCD/font20.o \
+./Core/Src/LCD/font24.o \
 ./Core/Src/LCD/spi_ili9341.o 
 
 C_DEPS += \
+./Core/Src/LCD/font12.d \
+./Core/Src/LCD/font16.d \
+./Core/Src/LCD/font20.d \
+./Core/Src/LCD/font24.d \
 ./Core/Src/LCD/spi_ili9341.d 
 
 

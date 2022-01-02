@@ -69,7 +69,10 @@ volatile uint8_t Timer1, Timer2;
 // LCD
 extern uint16_t TFT9341_WIDTH;
 extern uint16_t TFT9341_HEIGHT;
-
+// LCD DMA
+uint8_t dma_spi_fl=0;
+uint32_t dma_spi_cnt=1;
+//
 
 /* USER CODE END PTD */
 
@@ -124,7 +127,7 @@ const osThreadAttr_t Blue_LED_Blink_attributes = {
 };
 /* Definitions for Show_Resources */
 osThreadId_t Show_ResourcesHandle;
-uint32_t Show_ResourcesBuffer[ 1024 ];
+uint32_t Show_ResourcesBuffer[ 500 ];
 osStaticThreadDef_t Show_ResourcesControlBlock;
 const osThreadAttr_t Show_Resources_attributes = {
   .name = "Show_Resources",
@@ -136,7 +139,7 @@ const osThreadAttr_t Show_Resources_attributes = {
 };
 /* Definitions for UART_Task */
 osThreadId_t UART_TaskHandle;
-uint32_t UART_TaskBuffer[ 1024 ];
+uint32_t UART_TaskBuffer[ 500 ];
 osStaticThreadDef_t UART_TaskControlBlock;
 const osThreadAttr_t UART_Task_attributes = {
   .name = "UART_Task",
@@ -148,7 +151,7 @@ const osThreadAttr_t UART_Task_attributes = {
 };
 /* Definitions for bme280 */
 osThreadId_t bme280Handle;
-uint32_t bme280Buffer[ 1024 ];
+uint32_t bme280Buffer[ 500 ];
 osStaticThreadDef_t bme280ControlBlock;
 const osThreadAttr_t bme280_attributes = {
   .name = "bme280",
@@ -160,7 +163,7 @@ const osThreadAttr_t bme280_attributes = {
 };
 /* Definitions for AM2302 */
 osThreadId_t AM2302Handle;
-uint32_t AM2302Buffer[ 1024 ];
+uint32_t AM2302Buffer[ 500 ];
 osStaticThreadDef_t AM2302ControlBlock;
 const osThreadAttr_t AM2302_attributes = {
   .name = "AM2302",
@@ -172,7 +175,7 @@ const osThreadAttr_t AM2302_attributes = {
 };
 /* Definitions for SD_CARD */
 osThreadId_t SD_CARDHandle;
-uint32_t SD_CARDBuffer[ 1024 ];
+uint32_t SD_CARDBuffer[ 500 ];
 osStaticThreadDef_t SD_CARDControlBlock;
 const osThreadAttr_t SD_CARD_attributes = {
   .name = "SD_CARD",
@@ -184,7 +187,7 @@ const osThreadAttr_t SD_CARD_attributes = {
 };
 /* Definitions for LCD */
 osThreadId_t LCDHandle;
-uint32_t LCDBuffer[ 2048 ];
+uint32_t LCDBuffer[ 11000 ];
 osStaticThreadDef_t LCDControlBlock;
 const osThreadAttr_t LCD_attributes = {
   .name = "LCD",
@@ -280,6 +283,19 @@ bool delay_us(uint16_t us)
 //	return true;
 }
 
+//void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
+//{
+//	 if(hspi == &hspi2)
+//	  {
+//	    dma_spi_cnt--;
+//	    if(dma_spi_cnt==0)
+//	    {
+//	      HAL_SPI_DMAStop(&hspi2);
+//	      dma_spi_cnt=1;
+//	      dma_spi_fl=1;
+//	    }
+//	  }
+//}
 
 /* USER CODE END PV */
 
@@ -883,7 +899,7 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Stream4_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 14, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
 
 }
@@ -1607,20 +1623,19 @@ void Start_LCD(void *argument)
   /* USER CODE BEGIN Start_LCD */
   /* Infinite loop */
 	TFT9341_ini(240, 320);
-	TFT9341_FillScreen(TFT9341_BLACK);
+	TFT9341_FillScreen(TFT9341_BLUE);
 	uint16_t i,j;
 
   for(;;)
   {
-	  for(i=0;i<1000;i++)
-	      {
-	        TFT9341_DrawCircle(HAL_RNG_GetRandomNumber(&hrng)%(TFT9341_WIDTH-40)+20,
-	                           HAL_RNG_GetRandomNumber(&hrng)%(TFT9341_HEIGHT-40)+20,
-							   10 ,TFT9341_RandColor());
-	        osDelay(3);
-	      }
-	  	  osDelay(500);
-	      TFT9341_FillScreen(TFT9341_BLACK);
+	  osDelay(100);
+	  speed_test();
+
+
+
+
+
+
 //	  osDelay(500);
 //	  TFT9341_FillScreen(TFT9341_BLACK);
 

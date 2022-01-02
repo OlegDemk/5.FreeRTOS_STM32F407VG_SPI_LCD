@@ -9,7 +9,7 @@
 #define INC_LCD_SPI_ILI9341_H_
 
 #include "stm32f4xx_hal.h"
-
+#include "LCD/fonts.h"
 //#include <cstdlib.h>
 
 void TFT9341_ini(uint16_t w_size, uint16_t h_size);

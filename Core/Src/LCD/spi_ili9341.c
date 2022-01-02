@@ -9,16 +9,53 @@
 #include "main.h"
 #include "stdbool.h"
 
+//#include "font24.c"
+//#include "font20.c"
+//#include "font16.c"
+//#include "font12.c"
+#include "LCD/font8.h"    // Додати інші шрифти зробивши їх h файлами
+
 extern SPI_HandleTypeDef hspi2;
 extern RNG_HandleTypeDef hrng;
 
 extern bool delay_us(uint16_t us);
 
+typedef struct
+{
+	uint16_t TextColor;
+	uint16_t BackColor;
+	sFONT *pFont;
+}LCD_DrawPropTypeDef;
+LCD_DrawPropTypeDef lcdprop;
+
 uint16_t TFT9341_WIDTH;
 uint16_t TFT9341_HEIGHT;
 
+// FOR DMA
+extern uint8_t dma_spi_fl;
+extern uint32_t dma_spi_cnt;
+uint8_t frm_buf[8192] = {0};
+//
+
 static void TFT9341_WriteData(uint8_t* buff, size_t buff_size);
 
+// ---------------------------------------------------------------------------------
+void TFT9341_FontsIni(void)
+{
+  Font8.Height = 8;
+  Font8.Width = 5;
+  Font12.Height = 12;
+  Font12.Width = 7;
+  Font16.Height = 16;
+  Font16.Width = 11;
+  Font20.Height = 20;
+  Font20.Width = 14;
+  Font24.Height = 24;
+  Font24.Width = 17;
+  lcdprop.BackColor=TFT9341_BLACK;
+  lcdprop.TextColor=TFT9341_GREEN;
+  lcdprop.pFont=&Font16;
+}
 // ---------------------------------------------------------------------------------
 void TFT9341_SendData(uint8_t dt)
 {
@@ -176,6 +213,8 @@ void TFT9341_ini(uint16_t w_size, uint16_t h_size)
 
     TFT9341_WIDTH = w_size;
     TFT9341_HEIGHT = h_size;
+
+    TFT9341_FontsIni();
 }
 // ---------------------------------------------------------------------------------
 static void TFT9341_WriteData(uint8_t* buff, size_t buff_size)
@@ -212,6 +251,44 @@ static void TFT9341_SetAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_
 // ---------------------------------------------------------------------------------
 void TFT9341_FillRect(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color)
 {
+
+//	uint32_t i, n, cnt, buf_size;
+//		if(x1>x2) swap(x1,x2);
+//		if(y1>y2) swap(y1,y2);
+//	  TFT9341_SetAddrWindow(x1, y1, x2, y2);
+//	  DC_DATA();
+//	  n = (x2-x1+1)*(y2-y1+1)*2;
+//	  if(n<=8192)
+//	  {
+//	    cnt = 1;
+//	    buf_size = n;
+//	  }
+//	  else
+//	  {
+//	    cnt = n/2;
+//	    buf_size = 2;
+//	    for(i = 8; i < n/8; i++)
+//	    {
+//	      if(n%i == 0)
+//	      {
+//	        cnt = i;
+//	        buf_size = n/i;
+//	        break;
+//	      }
+//	    }
+//	  }
+//	  for(i = 0; i < buf_size/2; i++)
+//	  {
+//	    frm_buf[i*2] = color >> 8;
+//	    frm_buf[i*2+1] = color & 0xFF;
+//	  }
+//	  dma_spi_cnt = cnt;
+//	  HAL_SPI_Transmit_DMA(&hspi2, frm_buf, buf_size);
+//	  while(!dma_spi_fl) {}
+//	  dma_spi_fl=0;
+
+	/////////////////////////////////////
+	// Without DMA
   if((x1 >= TFT9341_WIDTH) || (y1 >= TFT9341_HEIGHT) || (x2 >= TFT9341_WIDTH) || (y2 >= TFT9341_HEIGHT)) return;
 	if(x1>x2) swap(x1,x2);
 	if(y1>y2) swap(y1,y2);
@@ -226,6 +303,22 @@ void TFT9341_FillRect(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16
 // ---------------------------------------------------------------------------------
 void TFT9341_FillScreen(uint16_t color)
 {
+//	uint32_t i, n;
+//	  TFT9341_SetAddrWindow(0, 0, TFT9341_WIDTH-1, TFT9341_HEIGHT-1);
+//	  for(i=0;i<3200;i++)
+//	  {
+//	    frm_buf[i*2] = color >> 8;
+//	    frm_buf[i*2+1] = color & 0xFF;
+//	  }
+//	  n = 6400;
+//	  DC_DATA();
+//	  dma_spi_cnt = 24;
+//	  HAL_SPI_Transmit_DMA(&hspi2, frm_buf, n);
+//	  while(!dma_spi_fl) {}
+//	  dma_spi_fl=0;
+
+	////////////////////////////////
+	  // Without DMA
   TFT9341_FillRect(0, 0, TFT9341_WIDTH-1, TFT9341_HEIGHT-1, color);
 }
 // ---------------------------------------------------------------------------------
@@ -309,10 +402,111 @@ void TFT9341_DrawCircle(uint16_t x0, uint16_t y0, int r, uint16_t color)
 	}
 }
 // ---------------------------------------------------------------------------------
+void TFT9341_SetTextColor(uint16_t color)
+{
+  lcdprop.TextColor=color;
+}
+// ---------------------------------------------------------------------------------
+void TFT9341_SetBackColor(uint16_t color)
+{
+  lcdprop.BackColor=color;
+}
+// ---------------------------------------------------------------------------------
+void TFT9341_SetFont(sFONT *pFonts)
+{
+  lcdprop.pFont=pFonts;
+}
+// ---------------------------------------------------------------------------------
+void TFT9341_DrawChar(uint16_t x, uint16_t y, uint8_t c)
+{
+  uint32_t i = 0, j = 0;
+  uint16_t height, width;
+  uint8_t offset;
+  uint8_t *c_t;
+  uint8_t *pchar;
+  uint32_t line=0;
+  height = lcdprop.pFont->Height;
+  width  = lcdprop.pFont->Width;
+  offset = 8 *((width + 7)/8) -  width ;
+  c_t = (uint8_t*) &(lcdprop.pFont->table[(c-' ') * lcdprop.pFont->Height * ((lcdprop.pFont->Width + 7) / 8)]);
+  for(i = 0; i < height; i++)
+  {
+    pchar = ((uint8_t *)c_t + (width + 7)/8 * i);
+    switch(((width + 7)/8))
+    {
+      case 1:
+          line =  pchar[0];
+          break;
+      case 2:
+          line =  (pchar[0]<< 8) | pchar[1];
+          break;
+      case 3:
+      default:
+        line =  (pchar[0]<< 16) | (pchar[1]<< 8) | pchar[2];
+        break;
+    }
+    for (j = 0; j < width; j++)
+    {
+      if(line & (1 << (width- j + offset- 1)))
+      {
+        TFT9341_DrawPixel((x + j), y, lcdprop.TextColor);
+      }
+      else
+      {
+        TFT9341_DrawPixel((x + j), y, lcdprop.BackColor);
+      }
+    }
+    y++;
+  }
+}
+// ---------------------------------------------------------------------------------
+void TFT9341_String(uint16_t x,uint16_t y, char *str)
+{
+  while(*str)
+  {
+    TFT9341_DrawChar(x,y,str[0]);
+    x+=lcdprop.pFont->Width;
+    (void)*str++;
+  }
+}
+// ---------------------------------------------------------------------------------
+void TFT9341_SetRotation(uint8_t r)
+{
+  TFT9341_SendCommand(0x36);
+  switch(r)
+  {
+    case 0:
+      TFT9341_SendData(0x48);
+      TFT9341_WIDTH = 240;
+      TFT9341_HEIGHT = 320;
+      break;
+    case 1:
+      TFT9341_SendData(0x28);
+      TFT9341_WIDTH = 320;
+      TFT9341_HEIGHT = 240;
+      break;
+    case 2:
+      TFT9341_SendData(0x88);
+      TFT9341_WIDTH = 240;
+      TFT9341_HEIGHT = 320;
+      break;
+    case 3:
+      TFT9341_SendData(0xE8);
+      TFT9341_WIDTH = 320;
+      TFT9341_HEIGHT = 240;
+      break;
+  }
+}
+// ---------------------------------------------------------------------------------
 
 
 
 
+
+
+// ---------------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------------
 ////////////////////////////// TEST
