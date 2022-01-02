@@ -187,7 +187,7 @@ const osThreadAttr_t SD_CARD_attributes = {
 };
 /* Definitions for LCD */
 osThreadId_t LCDHandle;
-uint32_t LCDBuffer[ 10000 ];
+uint32_t LCDBuffer[ 1024 ];
 osStaticThreadDef_t LCDControlBlock;
 const osThreadAttr_t LCD_attributes = {
   .name = "LCD",
@@ -248,16 +248,8 @@ int8_t user_i2c_write(uint8_t id, uint8_t reg_addr, uint8_t *data, uint16_t len)
 }
 // End BME280 part/////////////////////////////////////////////////////////////////////////////////////
 
-//__STATIC_INLINE void DelayMicro(__IO uint32_t micros)
-//{
-//	uint32_t test_micros = SystemCoreClock;
-//	micros *= (SystemCoreClock / 100000) /168;			// 84
-//	while (micros--);
-//	//HAL_GPIO_TogglePin(GPIOD, LD3_Pin);
-//
-//}
-
-
+// ---------------------------------------------------------------------------------
+// Function for generate dalay more than 10 us (using for AM2302 T and H sensor)
 bool delay_us(uint16_t us)
 {
 	__HAL_TIM_SET_COUNTER(&htim10, 0);
@@ -271,32 +263,23 @@ bool delay_us(uint16_t us)
 	tim_val = 0;
 	int s = 99;
 	return true;
-
-//	__HAL_TIM_SET_COUNTER(&htim10, 0);
-//	HAL_TIM_Base_Start_IT(&htim10);
-//	uint32_t kk = __HAL_TIM_GET_COUNTER(&htim10);
-//	while (__HAL_TIM_GET_COUNTER(&htim10) < us)  // wait for the counter to reach the us input in the parameter
-//	{
-//
-//	}
-//	//HAL_TIM_Base_Stop_IT(&htim10);
-//	return true;
 }
-
+// ---------------------------------------------------------------------------------
+// For DMA SPI2 (LCD)
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	 if(hspi == &hspi2)
-	  {
+	if(hspi == &hspi2)
+	{
 	    dma_spi_cnt--;
 	    if(dma_spi_cnt==0)
 	    {
-	      HAL_SPI_DMAStop(&hspi2);
-	      dma_spi_cnt=1;
-	      dma_spi_fl=1;
+	    	HAL_SPI_DMAStop(&hspi2);
+	    	dma_spi_cnt=1;
+	    	dma_spi_fl=1;
 	    }
-	  }
+	}
 }
-
+// ---------------------------------------------------------------------------------
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -376,19 +359,15 @@ int main(void)
   //HAL_TIM_Base_Start_IT(&htim10);			// Using for generate us delays
   HAL_TIM_Base_Start_IT(&htim1);			// Blink Green LED
 
-  // RIGHT ORDER TI INIT SPI2 AND DMA !!!!
+  /* IF LCD DOESN'T WORK !
+  RIGHT IN RIGHT ORDER SPI2 AND DMA !!!!
   MX_DMA_Init();
   MX_SPI2_Init();
-
-
-//  osDelay(1000);
-//	  ILI9341_Draw_Text( "TEST 1234567890 !!!", 5,0, WHITE, 2, BLACK);
-//
-////	  ILI9341_Draw_Filled_Rectangle_Coord(20, 20, 150, 150, RED);
-////	  ILI9341_Draw_Filled_Rectangle_Coord(20, 20, 100, 100, BLUE);
-////	  ILI9341_Draw_Filled_Rectangle_Coord(50, 50, 200, 200, WHITE);
-////	  ILI9341_Draw_Filled_Rectangle_Coord(30, 30, 200, 200, YELLOW);
-
+  */
+  HAL_DMA_DeInit(&hdma_spi2_tx);
+  HAL_SPI_DeInit(&hspi2);
+  MX_DMA_Init();
+  MX_SPI2_Init();
 
   /* USER CODE END 2 */
 
@@ -1079,22 +1058,9 @@ void StartDefaultTask(void *argument)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
-//    LCD_init();
-
-//  LCD_init();
-
   for(;;)
   {
-//	  osDelay(1000);
-//	  ILI9341_Draw_Text( "TEST 1234567890 !!!", 5,0, WHITE, 2, BLACK);
 	  osDelay(10);
-	 // speed_test_LCD(10);
-//	  ILI9341_Draw_Filled_Rectangle_Coord(20, 20, 150, 150, RED);
-//	  ILI9341_Draw_Filled_Rectangle_Coord(20, 20, 100, 100, BLUE);
-//	  ILI9341_Draw_Filled_Rectangle_Coord(50, 50, 200, 200, WHITE);
-//	  ILI9341_Draw_Filled_Rectangle_Coord(30, 30, 200, 200, YELLOW);
-
-
   }
   /* USER CODE END 5 */
 }
@@ -1355,7 +1321,7 @@ void Start_bme280(void *argument)
   {
 	  osDelay(1000);
 
-	  char str_t_h_and_p[50] = {0};
+	  char str_t_h_and_p[60] = {0};
 	  char str_thp_buffer[12] = {0};
 
 	  memset(msg.Buf, 0, sizeof(msg.Buf));								// Fill in buff '\0'
@@ -1370,7 +1336,7 @@ void Start_bme280(void *argument)
 
 	  		// Write T, H and P in str_t_h_and_p buffer
 	  		// Write TEMPERATURE
-	  		strcat(str_t_h_and_p, "BEE280: \n\r");
+	  		strcat(str_t_h_and_p, "      BEE280: \n\r");
 	  		strcat(str_t_h_and_p, "T: ");
 	  		sprintf(str_thp_buffer, "%f", BME280_temperature);
 	  		strcat(str_t_h_and_p, str_thp_buffer);
@@ -1427,7 +1393,7 @@ void Start_AM2302(void *argument)
 
   for(;;)
   {
-	  osDelay(3000);			// Measure every 3 seconds
+	  osDelay(3500);			// Measure every 3 seconds
 	  //----------------------------------------------------------------------------------------
 	  /*
 	   * Function make us delay
@@ -1526,14 +1492,14 @@ void Start_AM2302(void *argument)
 	  		hum = (float)(*(int16_t*)(data+3)) / 10;
 
 	  		// Write data in queue
-	  		char str_t_and_h[50] = {0};
+	  		char str_t_and_h[60] = {0};
 	  		char str_t_and_h_buffer[12] = {0};
 
 	  		memset(msg.Buf, 0, sizeof(msg.Buf));								// Fill in buff '\0'
 
 	  		// Write T and  H P in str_t_h buffer
 	  		// Write TEMPERATURE
-	  		strcat(str_t_and_h, "AM2302: \n\r");
+	  		strcat(str_t_and_h, "     AM2302: \n\r");
 	  		strcat(str_t_and_h, "T: ");
 	  		sprintf(str_t_and_h_buffer, "%f", temper);
 	  		strcat(str_t_and_h, str_t_and_h_buffer);
@@ -1630,21 +1596,9 @@ void Start_LCD(void *argument)
 
   for(;;)
   {
-	  osDelay(2000);
 	  speed_test();
 	  TFT9341_FillScreen(TFT9341_BLACK);
-
-
-
-
-
-
-//	  osDelay(500);
-//	  TFT9341_FillScreen(TFT9341_BLACK);
-
-
-	//lcd_test_print();
-	//HAL_GPIO_WritePin(GPIOD, LD4_Pin, GPIO_PIN_RESET);
+	  osDelay(5000);
   }
   /* USER CODE END Start_LCD */
 }

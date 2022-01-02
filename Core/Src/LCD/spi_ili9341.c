@@ -251,7 +251,7 @@ static void TFT9341_SetAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_
 // ---------------------------------------------------------------------------------
 void TFT9341_FillRect(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color)
 {
-
+	// With DMA
 	uint32_t i, n, cnt, buf_size;
 		if(x1>x2) swap(x1,x2);
 		if(y1>y2) swap(y1,y2);
@@ -303,6 +303,7 @@ void TFT9341_FillRect(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16
 // ---------------------------------------------------------------------------------
 void TFT9341_FillScreen(uint16_t color)
 {
+	// With DMA
 	uint32_t i, n;
 	  TFT9341_SetAddrWindow(0, 0, TFT9341_WIDTH-1, TFT9341_HEIGHT-1);
 	  for(i=0;i<3200;i++)
@@ -317,9 +318,9 @@ void TFT9341_FillScreen(uint16_t color)
 	  while(!dma_spi_fl) {}
 	  dma_spi_fl=0;
 
-	////////////////////////////////
-	  // Without DMA
-  //TFT9341_FillRect(0, 0, TFT9341_WIDTH-1, TFT9341_HEIGHT-1, color);
+	///////////////////////////////////////////////////////////////////////////
+	//   Without DMA
+//  TFT9341_FillRect(0, 0, TFT9341_WIDTH-1, TFT9341_HEIGHT-1, color);
 }
 // ---------------------------------------------------------------------------------
 uint16_t TFT9341_RandColor(void)
@@ -501,20 +502,20 @@ void TFT9341_SetRotation(uint8_t r)
 
 
 
-
-
-
 // ---------------------------------------------------------------------------------
+////////////////////////////// TEST function
+/* 	Compare without DMA and with DMA
+ 1. Without DMA: 9 seconds
+ 2. With DMA 1.6 seconds
+ Select neaded variant in functions: TFT9341_FillRect and TFT9341_FillScreen.
 
-// ---------------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------------
-////////////////////////////// TEST
-// Without DMA: 8 seconds
+ */
 void speed_test(void)
 {
 	HAL_GPIO_WritePin(GPIOD, LD4_Pin, GPIO_PIN_SET);
 	int i = 0;
+
+	// TEST 1
 	for(i = 0; i < 10; i++)
 	{
 		// TEST 1fill all dysplay random colors
@@ -522,36 +523,31 @@ void speed_test(void)
 	    //osDelay(200);
 	}
 
+	// TEST 2
 	for(i = 0; i < 10; i++)
 	{
-		// TEST 2
 		TFT9341_FillRect(0, 0, TFT9341_WIDTH/2-1, TFT9341_HEIGHT/2-1, TFT9341_RandColor());
-		//HAL_Delay(300);
 		TFT9341_FillRect(TFT9341_WIDTH/2, 0, TFT9341_WIDTH-1, TFT9341_HEIGHT/2-1, TFT9341_RandColor());
-		//HAL_Delay(300);
 		TFT9341_FillRect(0, TFT9341_HEIGHT/2, TFT9341_WIDTH/2-1, TFT9341_HEIGHT-1, TFT9341_RandColor());
-		//HAL_Delay(300);
 		TFT9341_FillRect(TFT9341_WIDTH/2, TFT9341_HEIGHT/2, TFT9341_WIDTH-1, TFT9341_HEIGHT-1, TFT9341_RandColor());
-		//HAL_Delay(300);
 	}
 
-	for(i = 0; i < 10; i++)
+	// TEST 3
+	TFT9341_FillScreen(TFT9341_BLACK);
+	for(i = 0; i < 100; i++)
 	{
-		  // TEST 3
-		TFT9341_FillRect(HAL_RNG_GetRandomNumber(&hrng)%TFT9341_WIDTH,
-		HAL_RNG_GetRandomNumber(&hrng)%TFT9341_HEIGHT,
+		TFT9341_DrawLine(TFT9341_RandColor(),
 		HAL_RNG_GetRandomNumber(&hrng)%TFT9341_WIDTH,
 		HAL_RNG_GetRandomNumber(&hrng)%TFT9341_HEIGHT,
-		TFT9341_RandColor());
-		//HAL_Delay(100);
+		HAL_RNG_GetRandomNumber(&hrng)%TFT9341_WIDTH,
+		HAL_RNG_GetRandomNumber(&hrng)%TFT9341_HEIGHT);
 	}
 	HAL_GPIO_WritePin(GPIOD, LD4_Pin, GPIO_PIN_RESET);
 
 	i = 0;
 }
 // ---------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------
+
 
 
 
