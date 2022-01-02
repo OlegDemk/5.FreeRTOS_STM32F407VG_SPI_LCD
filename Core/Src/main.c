@@ -187,7 +187,7 @@ const osThreadAttr_t SD_CARD_attributes = {
 };
 /* Definitions for LCD */
 osThreadId_t LCDHandle;
-uint32_t LCDBuffer[ 11000 ];
+uint32_t LCDBuffer[ 10000 ];
 osStaticThreadDef_t LCDControlBlock;
 const osThreadAttr_t LCD_attributes = {
   .name = "LCD",
@@ -366,10 +366,8 @@ int main(void)
   MX_FATFS_Init();
   MX_TIM1_Init();
   MX_RTC_Init();
-
-  MX_DMA_Init();
   MX_SPI2_Init();
-
+  MX_DMA_Init();
   MX_RNG_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim3);		//  This TIM3 using for calculate how many time all tasks was running.
@@ -378,7 +376,9 @@ int main(void)
   //HAL_TIM_Base_Start_IT(&htim10);			// Using for generate us delays
   HAL_TIM_Base_Start_IT(&htim1);			// Blink Green LED
 
-
+  // RIGHT ORDER TI INIT SPI2 AND DMA !!!!
+  MX_DMA_Init();
+  MX_SPI2_Init();
 
 
 //  osDelay(1000);
