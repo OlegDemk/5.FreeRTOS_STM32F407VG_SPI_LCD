@@ -1704,7 +1704,7 @@ void Start_LCD(void *argument)
 	// Init LCD
 	TFT9341_ini(240, 320);
 	TFT9341_SetRotation(3);
-	TFT9341_SetTextColor(TFT9341_WHITE);
+	TFT9341_SetTextColor(TFT9341_WHITE);  // ДОМАЛЮВАТИ СХЕКМУ ПІДКЛЮЧЕННЯ  !!!  І ОПИС ПРОЕКТУ
 	TFT9341_SetBackColor(TFT9341_BLUE);
 	TFT9341_FillScreen(TFT9341_BLUE);
 

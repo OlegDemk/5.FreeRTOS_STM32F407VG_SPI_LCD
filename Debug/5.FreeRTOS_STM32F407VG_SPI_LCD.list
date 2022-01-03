@@ -10092,7 +10092,7 @@ void Start_LCD(void *argument)
 	TFT9341_SetRotation(3);
  8004a7a:	2003      	movs	r0, #3
  8004a7c:	f001 faba 	bl	8005ff4 <TFT9341_SetRotation>
-	TFT9341_SetTextColor(TFT9341_WHITE);
+	TFT9341_SetTextColor(TFT9341_WHITE);  // ДОМАЛЮВАТИ СХЕКМУ ПІДКЛЮЧЕННЯ  !!!  І ОПИС ПРОЕКТУ
  8004a80:	f64f 70ff 	movw	r0, #65535	; 0xffff
  8004a84:	f001 f9c4 	bl	8005e10 <TFT9341_SetTextColor>
 	TFT9341_SetBackColor(TFT9341_BLUE);
