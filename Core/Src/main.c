@@ -41,7 +41,7 @@
 
 
 #include "LCD/spi_ili9341.h"
-
+#include "LCD/ILI9341_Touchscreen.h"
 
 
 
@@ -51,10 +51,15 @@
 typedef StaticTask_t osStaticThreadDef_t;
 typedef StaticQueue_t osStaticMessageQDef_t;
 /* USER CODE BEGIN PTD */
-typedef struct 							//Queue
+typedef struct 							// Queue for UARD
 {
 	char Buf[1024];
 }QUEUE_t;
+
+typedef struct							// Queue for Touch LCD
+{
+	char buff[100];
+}LCDQUEUE;
 
 volatile unsigned long ulHighFreqebcyTimerTicks;		// This variable using for calculate how many time all tasks was running.
 char str_management_memory_str[1000] = {0};
@@ -66,14 +71,97 @@ uint32_t tim_val = 0;
 volatile uint8_t FatFsCnt = 0;
 volatile uint8_t Timer1, Timer2;
 
-// LCD
+// LCD //////////////////////////////////
 extern uint16_t TFT9341_WIDTH;
 extern uint16_t TFT9341_HEIGHT;
 // LCD DMA
 uint8_t dma_spi_fl=0;
 uint32_t dma_spi_cnt=1;
-//
+////////////////////////////////////////
 
+
+//// Task every seconds blink blue LED and send data in virtual com port.
+//	// Set up RTC
+//	/*	README <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+//	 * STM32IDE  automatically generated setup code and fill in RTC structure fields seconds, minutes,
+//	 * hours and date. So, for avoid rewriting time, you need comment automated generated code.
+//	 *
+//	 * RTC needs BATTERY for count time when external power will be removed.
+//	 * For STM32F407 discovery dev board needs remove R26, and connect battery to VBAT (near R26).
+//	 * Also, need solder the LF Crystal and two capacitors.
+//	 */
+//
+//	// 1. Set time
+//	  RTC_TimeTypeDef sTime = {0};
+////	  sTime.Hours = 9;
+////	  sTime.Minutes = 33;
+////	  sTime.Seconds = 00;
+////	  HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+//	  // Set date
+//
+//	  RTC_DateTypeDef sDate = {0};
+////	  sDate.Date = 29;
+////	  sDate.Month = RTC_MONTH_DECEMBER;
+////	  sDate.WeekDay = RTC_WEEKDAY_WEDNESDAY;
+////	  sDate.Year = 21;
+////	  HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+//	  /////////////////////////////////////////////////////////////////////
+//
+//	QUEUE_t msg;												// Make a queue
+//
+//	char buff[50] = {0};
+//	char buf[5] = {0};
+//	char str_end_of_line[4] = {'\r','\n','\0'};
+//
+//
+//	static uint8_t i = 1;
+//	for(;;)
+//	{
+//		// 				Зробити окрему таску з RTC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//		// Blue LED blink
+//		HAL_GPIO_WritePin(GPIOD, LD6_Pin, GPIO_PIN_SET);
+//		osDelay(100);
+//		HAL_GPIO_WritePin(GPIOD, LD6_Pin, GPIO_PIN_RESET);
+//		osDelay(900);
+//
+//		// RTC part
+//		HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);						// Get time (write in sDime struct)
+//		HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);						// Get data (write in sDime struct)
+//
+//		memset(msg.Buf, 0, sizeof(msg.Buf));								// Fill in buff '\0'
+//		memset(buff, 0, sizeof(buff));
+//
+//		strcat(msg.Buf, "RTC DATA AND TIME >>>>>>>    " );
+//
+//		// Date
+//		itoa(sDate.Year, buf, 10);
+//		strcat(msg.Buf, buf);
+//
+//		itoa(sDate.Month, buf, 10);
+//		strcat(msg.Buf, "-");
+//		strcat(msg.Buf, buf);
+//
+//		itoa(sDate.Date, buf, 10);
+//		strcat(msg.Buf, "-");
+//		strcat(msg.Buf, buf);
+//
+//		strcat(msg.Buf, " | ");
+//
+//		// Time
+//		itoa(sTime.Hours, buf, 10);
+//		strcat(msg.Buf, buf);
+//
+//		itoa(sTime.Minutes, buf, 10);
+//		strcat(msg.Buf, ":");
+//		strcat(msg.Buf, buf);
+//
+//		itoa(sTime.Seconds, buf, 10);
+//		strcat(msg.Buf, ":");
+//		strcat(msg.Buf, buf);
+//
+//		strcat(msg.Buf, str_end_of_line);
+//		osMessageQueuePut(UARTQueueHandle, &msg, 0, osWaitForever);					// Write data on queue (In will print on StartUART_Task task)
+//	}
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -113,12 +201,12 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = sizeof(defaultTaskBuffer),
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for Blue_LED_Blink */
-osThreadId_t Blue_LED_BlinkHandle;
-uint32_t Blue_LED_BlinkBuffer[ 1024 ];
+/* Definitions for RTC */
+osThreadId_t RTCHandle;
+uint32_t Blue_LED_BlinkBuffer[ 500 ];
 osStaticThreadDef_t Blue_LED_BlinkControlBlock;
-const osThreadAttr_t Blue_LED_Blink_attributes = {
-  .name = "Blue_LED_Blink",
+const osThreadAttr_t RTC_attributes = {
+  .name = "RTC",
   .cb_mem = &Blue_LED_BlinkControlBlock,
   .cb_size = sizeof(Blue_LED_BlinkControlBlock),
   .stack_mem = &Blue_LED_BlinkBuffer[0],
@@ -197,6 +285,18 @@ const osThreadAttr_t LCD_attributes = {
   .stack_size = sizeof(LCDBuffer),
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for LCD_touchscreen */
+osThreadId_t LCD_touchscreenHandle;
+uint32_t LCD_touchscreenBuffer[ 128 ];
+osStaticThreadDef_t LCD_touchscreenControlBlock;
+const osThreadAttr_t LCD_touchscreen_attributes = {
+  .name = "LCD_touchscreen",
+  .cb_mem = &LCD_touchscreenControlBlock,
+  .cb_size = sizeof(LCD_touchscreenControlBlock),
+  .stack_mem = &LCD_touchscreenBuffer[0],
+  .stack_size = sizeof(LCD_touchscreenBuffer),
+  .priority = (osPriority_t) osPriorityLow,
+};
 /* Definitions for UARTQueue */
 osMessageQueueId_t UARTQueueHandle;
 uint8_t UARTQueueBuffer[ 10 * sizeof( QUEUE_t ) ];
@@ -207,6 +307,17 @@ const osMessageQueueAttr_t UARTQueue_attributes = {
   .cb_size = sizeof(UARTQueueControlBlock),
   .mq_mem = &UARTQueueBuffer,
   .mq_size = sizeof(UARTQueueBuffer)
+};
+/* Definitions for LCDQueue */
+osMessageQueueId_t LCDQueueHandle;
+uint8_t LCDQueueBuffer[ 1 * sizeof( LCDQUEUE ) ];
+osStaticMessageQDef_t LCDQueueControlBlock;
+const osMessageQueueAttr_t LCDQueue_attributes = {
+  .name = "LCDQueue",
+  .cb_mem = &LCDQueueControlBlock,
+  .cb_size = sizeof(LCDQueueControlBlock),
+  .mq_mem = &LCDQueueBuffer,
+  .mq_size = sizeof(LCDQueueBuffer)
 };
 /* USER CODE BEGIN PV */
 
@@ -296,13 +407,14 @@ static void MX_SPI2_Init(void);
 static void MX_DMA_Init(void);
 static void MX_RNG_Init(void);
 void StartDefaultTask(void *argument);
-void Start_Blue_LED_Blink(void *argument);
+void Start_RTC(void *argument);
 void Start_Show_Resources(void *argument);
 void Start_UART_Task(void *argument);
 void Start_bme280(void *argument);
 void Start_AM2302(void *argument);
 void Start_SD_CARD(void *argument);
 void Start_LCD(void *argument);
+void Start_LCD_touchscreen(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -390,6 +502,9 @@ int main(void)
   /* creation of UARTQueue */
   UARTQueueHandle = osMessageQueueNew (10, sizeof(QUEUE_t), &UARTQueue_attributes);
 
+  /* creation of LCDQueue */
+  LCDQueueHandle = osMessageQueueNew (1, sizeof(LCDQUEUE), &LCDQueue_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -398,8 +513,8 @@ int main(void)
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  /* creation of Blue_LED_Blink */
-  Blue_LED_BlinkHandle = osThreadNew(Start_Blue_LED_Blink, NULL, &Blue_LED_Blink_attributes);
+  /* creation of RTC */
+  RTCHandle = osThreadNew(Start_RTC, NULL, &RTC_attributes);
 
   /* creation of Show_Resources */
   Show_ResourcesHandle = osThreadNew(Start_Show_Resources, NULL, &Show_Resources_attributes);
@@ -418,6 +533,9 @@ int main(void)
 
   /* creation of LCD */
   LCDHandle = osThreadNew(Start_LCD, NULL, &LCD_attributes);
+
+  /* creation of LCD_touchscreen */
+  LCD_touchscreenHandle = osThreadNew(Start_LCD_touchscreen, NULL, &LCD_touchscreen_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -1065,44 +1183,43 @@ void StartDefaultTask(void *argument)
   /* USER CODE END 5 */
 }
 
-/* USER CODE BEGIN Header_Start_Blue_LED_Blink */
+/* USER CODE BEGIN Header_Start_RTC */
 /**
-* @brief Function implementing the Blue_LED_Blink thread.
+* @brief Function implementing the RTC thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_Start_Blue_LED_Blink */
-void Start_Blue_LED_Blink(void *argument)
+/* USER CODE END Header_Start_RTC */
+void Start_RTC(void *argument)
 {
-  /* USER CODE BEGIN Start_Blue_LED_Blink */
+  /* USER CODE BEGIN Start_RTC */
   /* Infinite loop */
-
 	// Task every seconds blink blue LED and send data in virtual com port.
-	// Set up RTC
-	/*	README <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-	 * STM32IDE  automatically generated setup code and fill in RTC structure fields seconds, minutes,
-	 * hours and date. So, for avoid rewriting time, you need comment automated generated code.
-	 *
-	 * RTC needs BATTERY for count time when external power will be removed.
-	 * For STM32F407 discovery dev board needs remove R26, and connect battery to VBAT (near R26).
-	 * Also, need solder the LF Crystal and two capacitors.
-	 */
+		// Set up RTC
+		/*	README <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+		 * STM32IDE  automatically generated setup code and fill in RTC structure fields seconds, minutes,
+		 * hours and date. So, for avoid rewriting time, you need comment automated generated code.
+		 *
+		 * RTC needs BATTERY for count time when external power will be removed.
+		 * For STM32F407 discovery dev board needs remove R26, and connect battery to VBAT (near R26).
+		 * Also, need solder the LF Crystal and two capacitors.
+		 */
 
-	// 1. Set time
-	  RTC_TimeTypeDef sTime = {0};
-//	  sTime.Hours = 9;
-//	  sTime.Minutes = 33;
-//	  sTime.Seconds = 00;
-//	  HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-	  // Set date
+		// 1. Set time
+		  RTC_TimeTypeDef sTime = {0};
+	//	  sTime.Hours = 9;
+	//	  sTime.Minutes = 33;
+	//	  sTime.Seconds = 00;
+	//	  HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+		  // Set date
 
-	  RTC_DateTypeDef sDate = {0};
-//	  sDate.Date = 29;
-//	  sDate.Month = RTC_MONTH_DECEMBER;
-//	  sDate.WeekDay = RTC_WEEKDAY_WEDNESDAY;
-//	  sDate.Year = 21;
-//	  HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
-	  /////////////////////////////////////////////////////////////////////
+		  RTC_DateTypeDef sDate = {0};
+	//	  sDate.Date = 29;
+	//	  sDate.Month = RTC_MONTH_DECEMBER;
+	//	  sDate.WeekDay = RTC_WEEKDAY_WEDNESDAY;
+	//	  sDate.Year = 21;
+	//	  HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+		  /////////////////////////////////////////////////////////////////////
 
 	QUEUE_t msg;												// Make a queue
 
@@ -1110,15 +1227,10 @@ void Start_Blue_LED_Blink(void *argument)
 	char buf[5] = {0};
 	char str_end_of_line[4] = {'\r','\n','\0'};
 
-	//LCD_init();
-	//lcd_test_print();
-
 	static uint8_t i = 1;
 	for(;;)
 	{
-//		speed_test_LCD(5);
-
-		// Blue LED blink
+		// Blue LED blink//
 		HAL_GPIO_WritePin(GPIOD, LD6_Pin, GPIO_PIN_SET);
 		osDelay(100);
 		HAL_GPIO_WritePin(GPIOD, LD6_Pin, GPIO_PIN_RESET);
@@ -1162,7 +1274,7 @@ void Start_Blue_LED_Blink(void *argument)
 		strcat(msg.Buf, str_end_of_line);
 		osMessageQueuePut(UARTQueueHandle, &msg, 0, osWaitForever);					// Write data on queue (In will print on StartUART_Task task)
 	}
-  /* USER CODE END Start_Blue_LED_Blink */
+  /* USER CODE END Start_RTC */
 }
 
 /* USER CODE BEGIN Header_Start_Show_Resources */
@@ -1572,9 +1684,6 @@ void Start_SD_CARD(void *argument)
 	  Unmount_SD("/");
 
 	  HAL_GPIO_WritePin(GPIOD, LD3_Pin, GPIO_PIN_RESET);		// LED OFF
-
-
-
   }
   /* USER CODE END Start_SD_CARD */
 }
@@ -1590,17 +1699,94 @@ void Start_LCD(void *argument)
 {
   /* USER CODE BEGIN Start_LCD */
   /* Infinite loop */
-	TFT9341_ini(240, 320);
-	TFT9341_FillScreen(TFT9341_BLUE);
-	uint16_t i,j;
+	LCDQUEUE msg;												// Make QUEUE
 
-  for(;;)
-  {
-	  speed_test();
-	  TFT9341_FillScreen(TFT9341_BLACK);
-	  osDelay(5000);
+	// Init LCD
+	TFT9341_ini(240, 320);
+	TFT9341_SetRotation(3);
+	TFT9341_SetTextColor(TFT9341_WHITE);
+	TFT9341_SetBackColor(TFT9341_BLUE);
+	TFT9341_FillScreen(TFT9341_BLUE);
+
+	for(;;)
+	{
+		char str_buf[60] = {0};
+		// osMessageQueueGet waiting data on a queue (If data are in queue so print it)
+		osMessageQueueGet(LCDQueueHandle, &msg, 0, osWaitForever);			// Write for data on queue
+		strcat(str_buf, msg.buff);											// Copy data in buffer for print
+		TFT9341_String(30,30,str_buf);										// Print data on LCD
+		memset(str_buf, 0, sizeof(str_buf));
+
+		osDelay(200);
+
+//	  // LCD speed test
+//	  speed_test();
+//	  TFT9341_FillScreen(TFT9341_BLACK);
+//	  osDelay(5000);
+//	  //
   }
   /* USER CODE END Start_LCD */
+}
+
+/* USER CODE BEGIN Header_Start_LCD_touchscreen */
+/**
+* @brief Function implementing the LCD_touchscreen thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_Start_LCD_touchscreen */
+void Start_LCD_touchscreen(void *argument)
+{
+  /* USER CODE BEGIN Start_LCD_touchscreen */
+  /* Infinite loop */
+	LCDQUEUE msg;												// Make QUEUE
+	memset(msg.buff, 0, sizeof(msg.buff));						// Fill in buff '\0'
+	char buffer[50] = {0};
+
+	for(;;)
+  	 {
+	  memset(msg.buff, 0, sizeof(msg.buff));						// Fill in buff '\0'
+	  //СЕНСОР ЕКРАНУ
+	  if(TP_Touchpad_Pressed() == TOUCHPAD_PRESSED)
+	  {
+		  strcat(buffer, "PRESED ");
+
+		  uint16_t x_and_y[2] = {0};
+		  uint8_t status_ts = TP_Read_Coordinates(x_and_y);
+		  if(status_ts == TOUCHPAD_DATA_OK)
+		  {
+			  // Convert coordinate from uint16_t format in string format
+			  // And save it in main buffer
+			  char buff_x_coordinates[6] = {0};
+			  char buff_y_coordinates[6] = {0};
+			  char buff_coordinates[15] = {0};
+
+			  strcat(buff_x_coordinates, "x: ");
+			  itoa(x_and_y[0], buff_x_coordinates, 10);
+			  strcat(buff_x_coordinates, " ");
+
+			  strcat(buff_y_coordinates, "y: ");
+			  itoa(x_and_y[1], buff_y_coordinates, 10);
+			  strcat(buff_y_coordinates, " ");
+
+			  strcat(buff_coordinates, buff_x_coordinates);
+			  strcat(buff_coordinates, buff_y_coordinates);
+			  strcat(buffer, buff_coordinates);
+		  }
+	  }
+	  else
+	  {
+		  strcat(buffer, "NO PRESS                  ");
+	  }
+
+	  strcat(msg.buff, buffer);
+	  osMessageQueuePut(LCDQueueHandle, &msg, 0, osWaitForever);  	// Write data on queue (In will print on StartUART_Task task)
+	  memset(buffer, 0, sizeof(buffer));
+
+	  osDelay(200);
+    //osDelay(1);
+  }
+  /* USER CODE END Start_LCD_touchscreen */
 }
 
 /**
