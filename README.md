@@ -8,6 +8,8 @@ PINs connection
 
 ![alt text](https://github.com/OlegDemk/5.FreeRTOS_STM32F407VG_SPI_LCD/blob/main/Pins%20connections.png)
 
+![alt text](https://github.com/OlegDemk/5.FreeRTOS_STM32F407VG_SPI_LCD/blob/main/schem.png)
+
 ![alt text](https://github.com/OlegDemk/5.FreeRTOS_STM32F407VG_SPI_LCD/blob/main/diagram_of_project.png)
 
 
